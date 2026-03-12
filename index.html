@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Retro Nano IDE</title>
+<link href="https://fonts.googleapis.com/css2?family=DejaVu+Sans+Mono&display=swap" rel="stylesheet">
+<style>
+body {
+  margin:0;
+  background:black;
+  color:#cfcfcf;
+  font-family:'DejaVu Sans Mono', monospace;
+  font-size:15px;
+}
+
+/* toolbar */
+.toolbar{
+  display:flex;
+  gap:18px;
+  padding:6px 10px;
+  border-bottom:1px solid #333;
+}
+.icon{
+  color:white;
+  cursor:pointer;
+  user-select:none;
+}
+.icon:hover{
+  opacity:.6;
+}
+
+/* layout */
+.container{
+  display:flex;
+  height:85vh;
+}
+
+/* file panel */
+.files{
+  width:180px;
+  border-right:1px solid #333;
+  padding:10px;
+}
+.files ul{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.files li{
+  padding:4px;
+  cursor:pointer;
+}
+.files li:hover{
+  background:#222;
+}
+
+/* editor */
+.editor{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+#editor {
+  flex: 1;
+  padding: 12px;
+  outline: none;
+  white-space: pre-wrap; /* Better for long lines */
+  word-wrap: break-word;
+  
+  /* The Magic: Block Cursor */
+  caret-shape: block; /* Works in modern Chromium browsers */
+  caret-color: white;
+  
+  /* Fallback/Refinement: Making it blink like a terminal */
+  animation: blink 1s step-end infinite;
+  user-select: text;
+  overflow: auto;
+}
+
+/* Custom blinking animation to match the "feel" of a terminal */
+@keyframes blink {
+  0%, 100% { caret-color: white; }
+  50% { caret-color: transparent; }
+}
+
+/* output */
+#output{
+  height:180px;
+  border-top:1px solid #333;
+}
+
+/* nano style bottom bar */
+.nanobar{
+  background:#1d3ea6;
+  color:white;
+  padding:4px 8px;
+  font-size:13px;
+}
+.nanobar span{
+  margin-right:20px;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="icon" onclick="newFile()">📄</span>
+  <span class="icon" onclick="runCode()">▶</span>
+</div>
+
+<div class="container">
+  <div class="files">
+    <ul id="fileList"></ul>
+  </div>
+
+  <div class="editor">
+    <div id="editor" contenteditable="true"></div>
+    <div id="output"></div>
+  </div>
+</div>
+
+<div class="nanobar">
+  <span>^G Help</span>
+  <span>^O WriteOut</span>
+  <span>^W Where Is</span>
+  <span>^K Cut</span>
+  <span>^T Execute</span>
+  <span>^C Location</span>
+  <span>^X Exit</span>
+</div>
+
+<script>
+let files = {};
+let currentFile = null;
+
+const editor = document.getElementById("editor");
+const fileList = document.getElementById("fileList");
+const output = document.getElementById("output");
+
+/* create file */
+function newFile(){
+  let name = prompt("File name");
+  if(!name) return;
+
+  files[name] = "";
+
+  let li = document.createElement("li");
+  li.textContent = name;
+  li.onclick = () => openFile(name);
+  fileList.appendChild(li);
+}
+
+/* open file */
+function openFile(name){
+  saveCurrent();
+  currentFile = name;
+  editor.innerText = files[name];
+  editor.focus();
+  moveCaretToEnd();
+}
+
+/* save editor */
+function saveCurrent(){
+  if(currentFile){
+    files[currentFile] = editor.innerText;
+  }
+}
+
+/* move caret to end of text */
+function moveCaretToEnd() {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+/* listen for typing */
+editor.addEventListener("input", saveCurrent);
+
+/* run code */
+function runCode(){
+  saveCurrent();
+  if(!currentFile) return;
+
+  const code = files[currentFile];
+
+  if(currentFile.endsWith(".html")){
+    output.innerHTML = "";
+    let frame = document.createElement("iframe");
+    frame.style.width="100%";
+    frame.style.height="100%";
+    frame.style.border="none";
+    output.appendChild(frame);
+    frame.contentDocument.open();
+    frame.contentDocument.write(code);
+    frame.contentDocument.close();
+  } else {
+    output.textContent = "Language runner not installed yet.";
+  }
+}
+
+</script>
+</body>
+</html>
